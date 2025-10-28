@@ -1,25 +1,74 @@
-name: Super-Linter
+name: Lint
 
 on:
   push:
+    branches: [ main ]
   pull_request:
+
+# Minimize token power for Zizmor
+permissions:
+  contents: read
+
+concurrency:
+  group: lint-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   lint:
-    name: Lint Code Base
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: read
-      statuses: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v5
+      
+      - name: Checkout repo
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0  
+          persist-credentials: false
+      
 
+    
+      - name: Setup Node (for Prettier)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Install Prettier (local, no lockfile write)
+        run: npm i --no-save prettier @prettier/plugin-xml
+
+      # Run super-linter
       - name: Super-Linter
         uses: super-linter/super-linter@v8.2.1
         env:
+          
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+         
+          VALIDATE_ALL_CODEBASE: ${{ github.event_name == 'push' && github.ref_name == 'main' && 'true' || 'false' }}
+          DEFAULT_BRANCH: main
+
+         
+          FILTER_REGEX_EXCLUDE: "(.*/node_modules/.*|.*/dist/.*|.*/build/.*)"
+
+          
+          VALIDATE_YAML: true
+          VALIDATE_YAML_PRETTIER: true
+
+          
+          VALIDATE_GITHUB_ACTIONS: true
+          VALIDATE_GITHUB_ACTIONS_ZIZMOR: true
+
+          
+          VALIDATE_PYTHON_BLACK: true
+          VALIDATE_PYTHON_ISORT: true
+          VALIDATE_PYTHON_FLAKE8: true
+          VALIDATE_PYTHON_MYPY: true
+          VALIDATE_PYTHON_RUFF: true
+          VALIDATE_PYTHON_RUFF_FORMAT: true
+
+          
+          VALIDATE_CHECKOV: true
+          VALIDATE_TRIVY: true
+
+          
+          VALIDATE_GITLEAKS: true
+          VALIDATE_JSCPD: true
+          VALIDATE_PRETTIER: true
